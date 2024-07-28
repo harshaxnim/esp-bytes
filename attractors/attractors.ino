@@ -1,24 +1,24 @@
-
-#include <M5GFX.h>
-M5GFX display;
+#include <M5Unified.h>
 
 static constexpr size_t COLOR_COUNT = 10;
 static uint32_t colors[COLOR_COUNT] = {0x390099, 0x9e0059, 0xff0054, 0xff5400, 0xffbd00, 0xffbc42, 0xd81159, 0x8f2d56, 0x218380, 0x73d2de};
 
-#define BG display.color888(250, 249, 175)
+#define BG M5.Display.color888(250, 249, 175)
 #define RESET_PERIOD 10000.f
 
 void setup(void)
 {
-  display.init();
-  display.startWrite();
-  display.fillScreen(BG);
+  M5.begin();
 
-  if (display.isEPD())
+  M5.Display.init();
+  M5.Display.startWrite();
+  M5.Display.fillScreen(BG);
+
+  if (M5.Display.isEPD())
   {
-    display.setEpdMode(epd_mode_t::epd_fastest);
+    M5.Display.setEpdMode(epd_mode_t::epd_fastest);
   }
-  display.setBrightness(30);
+  M5.Display.setBrightness(30);
 
   for (int x = 0; x < COLOR_COUNT; ++x)
   {
@@ -42,14 +42,14 @@ void setup(void)
       g = 255 - (x&15)*0x11;
       break;
     }
-    // colors[x] = display.color888(r,g,b);
+    // colors[x] = M5.Display.color888(r,g,b);
   }
 
-  display.setFont(&fonts::TomThumb);
-  display.setTextDatum(textdatum_t::middle_center);
-  display.setTextColor(TFT_BLACK, BG);
-  display.setTextSize(2);
-  display.drawString("! CHAOTIC ATTRACTORS !", display.width()*.5f, display.height()*.5f);
+  M5.Display.setFont(&fonts::TomThumb);
+  M5.Display.setTextDatum(textdatum_t::middle_center);
+  M5.Display.setTextColor(TFT_BLACK, BG);
+  M5.Display.setTextSize(2);
+  M5.Display.drawString("! CHAOTIC ATTRACTORS !", M5.Display.width()*.5f, M5.Display.height()*.5f);
   delay(1000);
 
   randomSeed(analogRead(0));
@@ -70,26 +70,28 @@ IconAttractorParams params[17] = {{-2.5, 5, -1.9, 1, 0.188, 5}, {1.56, -1, 0.1, 
 
 void loop(void)
 {
+  M5.update();
+
   static int nextReset=0;
   
-  const int h = display.height();
-  const int w = display.width();
+  const int h = M5.Display.height();
+  const int w = M5.Display.width();
   static int colorIdx;
 
   static float x=.01;
   static float y=.01;
   float x_n, y_n;
 
-  if (millis()>nextReset)
+  if (millis()>nextReset || M5.BtnA.wasClicked() || M5.BtnA.wasReleased())
   {
-    display.fillScreen(BG);
+    M5.Display.fillScreen(BG);
 
     nextReset = millis()+RESET_PERIOD;
 
     // int i = random(17);
     // int i = 2;
     static int i = -1;
-    i = i>16 ? 0 : i+1;
+    i = i==16 ? 0 : i+1;
     l = params[i].params[0];
     a = params[i].params[1];
     b = params[i].params[2];
@@ -100,11 +102,11 @@ void loop(void)
 
     colorIdx = random(COLOR_COUNT-1);
     
-    // display.setTextDatum(textdatum_t::bottom_right);
-    // display.drawString("! CHAOTIC ATTRACTORS !", 0, 0);
-    // display.setTextColor(colors[colorIdx]);
-    display.setCursor(15, 20);
-    display.printf("%d", i);
+    // M5.Display.setTextDatum(textdatum_t::bottom_right);
+    // M5.Display.drawString("! CHAOTIC ATTRACTORS !", 0, 0);
+    // M5.Display.setTextColor(colors[colorIdx]);
+    M5.Display.setCursor(15, 20);
+    M5.Display.printf("%d", i);
   }
   
   // dynamical eq
@@ -139,20 +141,20 @@ void loop(void)
 
   x = x_n; y=y_n;
 
-  // Scale to display
+  // Scale to M5.Display
   int x_d = x*(h*.4f)+(w*.5f);
   int y_d = y*(h*.4f)+(h*.5f);
 
   // Draw
-  display.waitDisplay();
+  M5.Display.waitDisplay();
 
   // Attractor output
-  display.fillRectAlpha(x_d, y_d, 1, 1, 18, colors[colorIdx]);
+  M5.Display.fillRectAlpha(x_d, y_d, 1, 1, 18, colors[colorIdx]);
   // Progress Bar
   int progress = h*(1.-(nextReset-millis())/RESET_PERIOD);
   Serial.println(progress);
-  display.fillRect(w-5, 0, 5, progress, colors[colorIdx]);
+  M5.Display.fillRect(w-5, 0, 5, progress, colors[colorIdx]);
 
-  display.display();
+  M5.Display.display();
 }
 
